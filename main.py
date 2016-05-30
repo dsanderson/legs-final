@@ -1,14 +1,33 @@
-import ios, motion, plotting
+import ios, motion, plotting, os, gears
 
 if __name__ == '__main__':
     leg = ios.leg()
-    path = ios.path()
+    path = ios.path_2()
     angs = motion.gen_angs(path,leg)
     upper_angs = [a[0] for a in angs]
     lower_angs = [a[3] for a in angs]
-    drive_rads, driven_rads, rads, rot = motion.gen_gear(upper_angs,1.0,1.5)
-    plotting.plot_gear(drive_rads, driven_rads, rads, rot, 'upper_joint', 1.5)
-    drive_rads, driven_rads, rads, rot = motion.gen_gear(lower_angs,1.0,1.5)
-    plotting.plot_gear(drive_rads, driven_rads, rads, rot, 'lower_joint', 1.5)
-    #plotting.plot_leg_motion(path,leg,ang)
-    #plotting.plot_angs(ang)
+    #plotting.plot_leg_motion(path,leg,angs, n_frames = 30)
+    #plotting.plot_angs(angs)
+    u_drive_rads, u_driven_rads, rads, rot = motion.gen_gear(upper_angs,1.0,1.5)
+    #plotting.plot_gear(drive_rads, driven_rads, rads, rot, 'upper_joint', 1.5)
+    l_drive_rads, l_driven_rads, rads, rot = motion.gen_gear(lower_angs,1.0,1.5)
+    #plotting.plot_gear(drive_rads, driven_rads, rads, rot, 'lower_joint', 1.5)
+    # hole_rad = 0.5
+    # fname_path = os.getcwd()
+    # fname_path = os.path.join(fname_path,'imgs','compiled')
+    # fname = os.path.join(fname_path, 'upper_drive.svg')
+    # gears.write_gear(fname,u_drive_rads,hole_rad)
+    #
+    # fname = os.path.join(fname_path, 'upper_driven.svg')
+    # gears.write_gear(fname,u_driven_rads,hole_rad)
+    #
+    # fname = os.path.join(fname_path, 'lower_drive.svg')
+    # gears.write_gear(fname,l_drive_rads,hole_rad)
+    #
+    # fname = os.path.join(fname_path, 'lower_driven.svg')
+    # gears.write_gear(fname,l_driven_rads,hole_rad)
+
+    inds_drive = gears.check_interior_angle(l_drive_rads)
+    inds_driven = gears.check_interior_angle(l_driven_rads)
+    plotting.plot_manufacturability(l_drive_rads,inds_drive+inds_driven)
+    plotting.plot_manufacturability(l_driven_rads,inds_drive+inds_driven)

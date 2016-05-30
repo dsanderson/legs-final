@@ -1,9 +1,9 @@
 import os, subprocess, math
-
+import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_leg_motion(path,leg,angs):
+def plot_leg_motion(path,leg,angs,n_frames):
     plt.figure()
     pxs = [p[0] for p in path]
     pxs.append(pxs[0])
@@ -11,7 +11,10 @@ def plot_leg_motion(path,leg,angs):
     pys.append(pys[0])
     plotnames = []
     plotpath = os.path.join(os.getcwd(),'imgs')
-    for i,a in enumerate(angs):
+    step = int(len(angs)/n_frames)
+    for i,a in tqdm.tqdm(enumerate(angs)):
+        if i%step!=0:
+            continue
         a_upper_raw = a[0]
         a_lower_raw = a[2]
         p_mid = (leg.center[0]+leg.upper_length*math.cos(a_upper_raw),
@@ -87,29 +90,52 @@ def plot_gear_single(drive_rads, driven_rads, rads, rot, label, l):
     plt.plot([x_cable,out_x],[y_cable,out_y],'g')
     plt.show()
 
-def plot_gear(drive_rads, driven_rads, rads, rot, label, l):
+def plot_gear(drive_gear, driven_gear, rads, rot, label, l):
     n_rots = 30
     c_dist = 2*1.0
     out_x = c_dist+l
     out_y = 0
     plt.figure()
     imgs = []
-    for i in xrange(0,n_rots):
-        shift = 2*math.pi*i/n_rots
-        xs_drive, ys_drive = pol2cart([r-shift+math.pi for r in rads], drive_rads)
+    drive_angs = [d[0] for d in drive_gear]
+    drive_rads = [d[1] for d in drive_gear]
+    driven_angs = [d[0] for d in driven_gear]
+    driven_rads = [d[1] for d in driven_gear]
+    # plt.figure()
+    # plt.hold(True)
+    # plt.plot(drive_angs,'b')
+    # plt.plot(driven_angs,'r')
+    # plt.title('angles')
+    # plt.figure()
+    # plt.hold(True)
+    # plt.plot(drive_rads,'b')
+    # plt.plot(driven_rads,'r')
+    # plt.title('radii')
+    # plt.show()
+    #for i in tqdm.tqdm(xrange(0,n_rots)):
+    frame_ct = int(len(drive_gear)/n_rots)
+    for i in tqdm.tqdm(xrange(len(drive_gear))):
+        if i%frame_ct!=0:
+            continue
+        #shift = drive_angs[i]#2*math.pi*i/n_rots
+#        xs_drive, ys_drive = pol2cart([-r-drive_angs[i] for r in drive_angs], drive_rads) #+math.pi #used to be negative
+        xs_drive, ys_drive = pol2cart([-r+drive_angs[i] for r in drive_angs], drive_rads) #+math.pi #used to be negative
         xs_drive.append(xs_drive[0])
         ys_drive.append(ys_drive[0])
-        xs_driven, ys_driven = pol2cart([r+shift for r in rads], driven_rads)
+#        xs_driven, ys_driven = pol2cart([r+driven_angs[i]+math.pi for r in driven_angs], driven_rads)
+        xs_driven, ys_driven = pol2cart([r-driven_angs[i]+math.pi for r in driven_angs], driven_rads)
         xs_driven.append(xs_driven[0])
         ys_driven.append(ys_driven[0])
         xs_driven = [x+c_dist for x in xs_driven]
-        x_cable = math.cos(rot+shift)+c_dist
-        y_cable = math.sin(rot+shift)
+        x_cable = math.cos(rot+driven_angs[i])+c_dist
+        y_cable = math.sin(rot+driven_angs[i])
 
         plt.plot(xs_drive,ys_drive,'b')
         plt.hold(True)
         plt.plot(xs_driven,ys_driven,'r')
         plt.plot([x_cable,out_x],[y_cable,out_y],'g')
+        plt.plot([0],[0],'bo')
+        plt.plot([c_dist],[0],'ro')
 
         path = os.getcwd()
         path = os.path.join(path,'imgs')
@@ -123,7 +149,20 @@ def plot_gear(drive_rads, driven_rads, rads, rot, label, l):
     outimg = os.path.join(outimg,'OUT_{}.gif'.format(label))
     make_gif(imgs,outimg,3.0)
 
-
+def plot_manufacturability(gear, fail_ids):
+    angs = [d[0] for d in gear]
+    rads = [d[1] for d in gear]
+    angs_fail = [d[0] for i,d in enumerate(gear) if i in fail_ids]
+    rads_fail = [d[1] for i,d in enumerate(gear) if i in fail_ids]
+    xs, ys = pol2cart(angs,rads)
+    xs_fail, ys_fail = pol2cart(angs_fail,rads_fail)
+    xs.append(xs[0])
+    ys.append(ys[0])
+    plt.plot(xs,ys,'b')
+    plt.hold(True)
+    plt.plot(xs_fail,ys_fail,'r.')
+    plt.axis('equal')
+    plt.show()
 
 def make_gif(images, outimg, length):
     delay = length*100/float(len(images))
