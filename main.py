@@ -29,5 +29,7 @@ if __name__ == '__main__':
 
     inds_drive = gears.check_interior_angle(l_drive_rads)
     inds_driven = gears.check_interior_angle(l_driven_rads)
-    plotting.plot_manufacturability(l_drive_rads,inds_drive+inds_driven)
-    plotting.plot_manufacturability(l_driven_rads,inds_drive+inds_driven)
+    out_motion = gears.calc_out_motion(l_drive_rads, l_driven_rads,1.0,1.5,inds_drive+inds_driven)
+    plotting.plot_manufacturability(l_drive_rads,l_driven_rads,inds_drive+inds_driven,out_motion)
+    #plotting.plot_manufacturability(l_driven_rads,inds_drive+inds_driven)
+    #gears.relax_motion(out_motion, 1.0, 1.5, inds_drive+inds_driven)

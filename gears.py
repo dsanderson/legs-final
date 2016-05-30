@@ -2,6 +2,7 @@ from __future__ import division
 import math
 import svgwrite, plotting
 from svgwrite import cm, mm
+import matplotlib.pyplot as plt
 
 def write_gear(fname, gear, hole_rad, base_rad_cm=2, cable_pt = None):
     dwg = svgwrite.Drawing(fname, profile='full')
@@ -14,23 +15,11 @@ def write_gear(fname, gear, hole_rad, base_rad_cm=2, cable_pt = None):
     xs = [(x+shiftx)*cm for x in xs]
     ys = [(y+shifty)*cm for y in ys]
     pts = zip(xs,ys)
-    #print pts
-#     dwg = '''<?xml version="1.0" encoding="utf-8" ?>
-# <svg baseProfile="full" height="100%" version="1.1" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink"><defs /><polyline points="'''
-#     polyline = [p[0]+','+p[1] for p in pts]
-#     polyline = " ".join(polyline)
-#     dwg = dwg+polyline
-#     dwg = dwg+'''" />'''
-#     circle = '<circle cx="{}" cy="{}" r="{}" />'.format(str(shiftx)+'cm',str(shifty)+'cm',str(hole_rad)+'cm')
-#     dwg = dwg+circle+'</svg>'
     for i in xrange(len(pts)-1):
         dwg.add(dwg.line(pts[i],pts[i+1]))
     dwg.add(dwg.line(pts[-1],pts[0]))
     dwg.add(dwg.circle(center=(shiftx*cm,shifty*cm),r=hole_rad*cm))
     dwg.save()
-#    f = open(fname,'w')
-#    f.write(dwg)
-#    f.close()
 
 def check_interior_angle(gear, threshold = (30/180)*math.pi):
     '''checks if the interior angle around a point is less than threshold.  Returns the indecies of points which failt that criterion'''
@@ -79,5 +68,32 @@ def check_interior_angle(gear, threshold = (30/180)*math.pi):
                     found = True
                     inds.append(i)
                     break
-    print angs_ccw
+    #print angs_ccw
     return inds
+
+def calc_out_motion(drive_gear, driven_gear, R, l, fail_inds):
+    #calculate (normalized) output motion from the gear and geometry data
+    xs = [d[0] for d in drive_gear]
+    ys = [math.sqrt((l-R*math.cos(d[0]))**2+(R*math.sin(d[0]))**2) for d in driven_gear]
+    #plt.plot(xs,ys,'b')
+    #plt.hold(True)
+    #xs_fails = [d for i, d in enumerate(xs) if i in fail_inds]
+    #ys_fails = [d for i, d in enumerate(ys) if i in fail_inds]
+    #plt.plot(xs_fails, ys_fails, 'r.')
+    #plt.show()
+    return zip(xs,ys)
+
+def relax_motion(out_motion, R, l, fail_inds, relax_width=math.pi/16, relax_pct = 0.25):
+    angs = [o[0] for o in out_motion]
+    target_dists = [o[1] for o in out_motion]
+    cable_dists = [math.sqrt((l-R*math.cos(a))**2+(R*math.sin(a))**2) for a in angs]
+    new_dists = []
+    for i in xrange(0, len(angs)):
+        rad = min([abs(angs[f]-angs[i]) for f in fail_inds])
+        new_dist = target_dists[i] - (target_dists[i]-cable_dists[i])*(1.0/(1.0+(rad/relax_width)))*relax_pct
+        new_dists.append(new_dist)
+    plt.plot(angs, target_dists, 'b')
+    plt.hold(True)
+    plt.plot(angs, cable_dists, 'r')
+    plt.plot(angs, new_dists, 'g')
+    plt.show()

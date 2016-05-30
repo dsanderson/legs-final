@@ -67,6 +67,8 @@ def pol2cart(angs,rads):
         ys.append(rad*math.sin(ang))
     return xs,ys
 
+
+
 def plot_gear_single(drive_rads, driven_rads, rads, rot, label, l):
     c_dist = 2*1.0
     out_x = c_dist+l
@@ -149,19 +151,59 @@ def plot_gear(drive_gear, driven_gear, rads, rot, label, l):
     outimg = os.path.join(outimg,'OUT_{}.gif'.format(label))
     make_gif(imgs,outimg,3.0)
 
-def plot_manufacturability(gear, fail_ids):
-    angs = [d[0] for d in gear]
-    rads = [d[1] for d in gear]
-    angs_fail = [d[0] for i,d in enumerate(gear) if i in fail_ids]
-    rads_fail = [d[1] for i,d in enumerate(gear) if i in fail_ids]
-    xs, ys = pol2cart(angs,rads)
-    xs_fail, ys_fail = pol2cart(angs_fail,rads_fail)
-    xs.append(xs[0])
-    ys.append(ys[0])
-    plt.plot(xs,ys,'b')
+def plot_stretching(out_angs, in_angs, stretching):
+    pass
+
+
+def plot_manufacturability(drive_gear, driven_gear, fail_ids, out_motion, c_dist = 2.0, name = ''):
+    drive_angs = [d[0] for d in drive_gear]
+    drive_rads = [d[1] for d in drive_gear]
+    driven_angs = [d[0]+math.pi for d in driven_gear]
+    driven_rads = [d[1] for d in driven_gear]
+    drive_angs_fail = [d[0] for i,d in enumerate(drive_gear) if i in fail_ids]
+    drive_rads_fail = [d[1] for i,d in enumerate(drive_gear) if i in fail_ids]
+    driven_angs_fail = [d[0]+math.pi for i,d in enumerate(driven_gear) if i in fail_ids]
+    driven_rads_fail = [d[1] for i,d in enumerate(driven_gear) if i in fail_ids]
+    drive_xs, drive_ys = pol2cart(drive_angs,drive_rads)
+    drive_xs_fail, drive_ys_fail = pol2cart(drive_angs_fail,drive_rads_fail)
+    driven_xs, driven_ys = pol2cart(driven_angs,driven_rads)
+    driven_xs_fail, driven_ys_fail = pol2cart(driven_angs_fail,driven_rads_fail)
+    #xs.append(xs[0])
+    #ys.append(ys[0])
+    driven_xs = [d+c_dist for d in driven_xs]
+    driven_xs_fail = [d+c_dist for d in driven_xs_fail]
+    plt.subplot(1,3,1)
+    plt.title(name)
+    plt.plot(drive_xs,drive_ys,'b')
     plt.hold(True)
-    plt.plot(xs_fail,ys_fail,'r.')
+    plt.plot(driven_xs,driven_ys,'b')
+    plt.plot(drive_xs_fail,drive_ys_fail,'r.')
+    plt.plot(driven_xs_fail,driven_ys_fail,'r.')
     plt.axis('equal')
+    #plot the stretching plot, with bad zones in red
+    plt.subplot(1,3,2)
+    xs = [o[0] for o in out_motion]
+    ys = [o[1] for o in out_motion]
+    plt.plot(xs,ys,'b')
+    xs_fails = [d for i, d in enumerate(xs) if i in fail_ids]
+    ys_fails = [d for i, d in enumerate(ys) if i in fail_ids]
+    plt.plot(xs_fails, ys_fails, 'r.')
+    plt.subplot(1,3,3)
+    plt.hold(True)
+    # for i in xrange(len(drive_angs)):
+    #     xs = [drive_angs[i],driven_angs[i]]
+    #     ys = [1,0]
+    #     if i in fail_ids:
+    #         plt.plot(xs,ys,'r')
+    #     else:
+    #         plt.plot(xs,ys,'b')
+    # d_angs = [driven_angs[i+1]-driven_angs[i] for i in xrange(len(driven_angs)-1)]
+    # d_angs.append(2*math.pi+driven_angs[0]-driven_angs[-1])
+    # plt.plot(driven_angs, d_angs, 'bo')
+    plt.plot()
+    for i in xrange(len(driven_angs)):
+        if i in fail_ids:
+            plt.plot(driven_angs[i],d_angs[i],'ro')
     plt.show()
 
 def make_gif(images, outimg, length):
