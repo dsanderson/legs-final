@@ -107,7 +107,7 @@ def gen_driven_gear(drive_gear, R):
     driven_angs = [0]
     driven_rads = [2*R-rads[0]]
     for i in xrange(1,len(rads)):
-        d_ang = ((angs[i]-angs[i-1])*rads[i-1])/driven_rads[i-1]
+        d_ang = -((angs[i]-angs[i-1])*rads[i-1])/driven_rads[i-1]
         driven_angs.append(driven_angs[i-1]+d_ang)
         driven_rads.append(2*R-rads[i])
     return zip(driven_angs,driven_rads)
@@ -152,28 +152,27 @@ def gen_gear(angs,R=1.0,l=1.5):
     raw_angs = []
     for t in ts:
         raw_angs.append(math.sqrt((l-R*math.cos(t))**2+(R*math.sin(t))**2))
+    angs = normalize_angs(angs)
     raw_angs = normalize_angs(raw_angs)
     rots, rot = calc_rots(angs,raw_angs)
-    #print vs
-    #convert relative velocities into matched gear sets, and their initial rotation
-    # rads = [(rot+(2*math.pi*i/len(vs)))%(2*math.pi) for i in range(0,len(vs))]
-    # drive_rads = [2*r/(v+1) for v in vs]
-    # driven_rads = [(2*r)-rad for rad in drive_rads]
-    #print rots
-    d_out = [rots[i+1][0]-rots[i][0] for i,_ in enumerate(rots[:-1])]
-    d_in = [rots[i+1][1]-rots[i][1] for i,_ in enumerate(rots[:-1])]
-    r_ins = [(2*R*d_out[i])/(d_in[i]+d_out[i]) for i in range(len(d_out))]
+
+    d_driven = [rots[i+1][1]-rots[i][1] for i,_ in enumerate(rots[:-1])]
+    d_driven.append(2*math.pi-rots[-1][1])
+    d_drive = [rots[i+1][0]-rots[i][0] for i,_ in enumerate(rots[:-1])]
+    d_drive.append(2*math.pi-rots[-1][0])
+    r_drive = [(2*R*d_driven[i])/(d_drive[i]+d_driven[i]) for i in range(len(d_driven))]
     # plt.figure()
     # plt.plot(r_ins)
     # plt.show()
     #produce the drive gear, as a pair (angle, radius)
     drive_gear = []
-    for i,r in enumerate(rots[:-1]):
-        drive_gear.append((r[0],r_ins[i]))
+    for i,r in enumerate(rots):
+        drive_gear.append((r[0],r_drive[i]))
+    driven_gear = gen_driven_gear(drive_gear,R)
     #produce the driven gear, as a pair (angle, radius)
-    driven_gear = []
-    for i,r in enumerate(rots[:-1]):
-        driven_gear.append((r[1],2*R-r_ins[i]))
+    #driven_gear = []
+    #for i,r in enumerate(rots[:-1]):
+#        driven_gear.append((r[1],2*R-r_ins[i]))
     rotations = rots
     return drive_gear, driven_gear, rotations, rot
 
@@ -222,6 +221,10 @@ def calc_rots(out_angs, in_angs):
             theta_out_in.append((t_out,t_in))
 
     rot = (out_peak_index/(len(out_angs)-1))*2*math.pi
+    # plt.plot([t[0] for t in theta_out_in],'b')
+    # plt.hold(True)
+    # plt.plot([t[1] for t in theta_out_in],'r')
+    # plt.show()
     return theta_out_in, rot
 
 def find_index_up(val, vals, start=0):
