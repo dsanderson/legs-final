@@ -172,7 +172,7 @@ def plot_manufacturability(drive_gear, driven_gear, fail_ids, out_motion, c_dist
     #ys.append(ys[0])
     driven_xs = [d+c_dist for d in driven_xs]
     driven_xs_fail = [d+c_dist for d in driven_xs_fail]
-    plt.subplot(1,3,1)
+    plt.subplot(1,2,1)
     plt.title(name)
     plt.plot(drive_xs,drive_ys,'b')
     plt.hold(True)
@@ -181,29 +181,29 @@ def plot_manufacturability(drive_gear, driven_gear, fail_ids, out_motion, c_dist
     plt.plot(driven_xs_fail,driven_ys_fail,'r.')
     plt.axis('equal')
     #plot the stretching plot, with bad zones in red
-    plt.subplot(1,3,2)
+    plt.subplot(1,2,2)
     xs = [o[0] for o in out_motion]
     ys = [o[1] for o in out_motion]
     plt.plot(xs,ys,'b')
     xs_fails = [d for i, d in enumerate(xs) if i in fail_ids]
     ys_fails = [d for i, d in enumerate(ys) if i in fail_ids]
     plt.plot(xs_fails, ys_fails, 'r.')
-    plt.subplot(1,3,3)
-    plt.hold(True)
-    # for i in xrange(len(drive_angs)):
-    #     xs = [drive_angs[i],driven_angs[i]]
-    #     ys = [1,0]
+    # plt.subplot(1,3,3)
+    # plt.hold(True)
+    # # for i in xrange(len(drive_angs)):
+    # #     xs = [drive_angs[i],driven_angs[i]]
+    # #     ys = [1,0]
+    # #     if i in fail_ids:
+    # #         plt.plot(xs,ys,'r')
+    # #     else:
+    # #         plt.plot(xs,ys,'b')
+    # # d_angs = [driven_angs[i+1]-driven_angs[i] for i in xrange(len(driven_angs)-1)]
+    # # d_angs.append(2*math.pi+driven_angs[0]-driven_angs[-1])
+    # # plt.plot(driven_angs, d_angs, 'bo')
+    # plt.plot()
+    # for i in xrange(len(driven_angs)):
     #     if i in fail_ids:
-    #         plt.plot(xs,ys,'r')
-    #     else:
-    #         plt.plot(xs,ys,'b')
-    # d_angs = [driven_angs[i+1]-driven_angs[i] for i in xrange(len(driven_angs)-1)]
-    # d_angs.append(2*math.pi+driven_angs[0]-driven_angs[-1])
-    # plt.plot(driven_angs, d_angs, 'bo')
-    plt.plot()
-    for i in xrange(len(driven_angs)):
-        if i in fail_ids:
-            plt.plot(driven_angs[i],d_angs[i],'ro')
+    #         plt.plot(driven_angs[i],d_angs[i],'ro')
     plt.show()
 
 def make_gif(images, outimg, length):
