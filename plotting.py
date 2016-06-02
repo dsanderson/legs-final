@@ -121,16 +121,17 @@ def plot_gear(drive_gear, driven_gear, rads, rot, label, l):
             continue
         #shift = drive_angs[i]#2*math.pi*i/n_rots
 #        xs_drive, ys_drive = pol2cart([-r-drive_angs[i] for r in drive_angs], drive_rads) #+math.pi #used to be negative
-        xs_drive, ys_drive = pol2cart([-r+drive_angs[i] for r in drive_angs], drive_rads) #+math.pi #used to be negative
+        xs_drive, ys_drive = pol2cart([r-drive_angs[i] for r in drive_angs], drive_rads) #+math.pi #used to be negative
         xs_drive.append(xs_drive[0])
+        #xs_drive = [-x for x in xs_drive]
         ys_drive.append(ys_drive[0])
 #        xs_driven, ys_driven = pol2cart([r+driven_angs[i]+math.pi for r in driven_angs], driven_rads)
-        xs_driven, ys_driven = pol2cart([r-driven_angs[i]+math.pi for r in driven_angs], driven_rads)
+        xs_driven, ys_driven = pol2cart([r-driven_angs[i]-math.pi for r in driven_angs], driven_rads)
         xs_driven.append(xs_driven[0])
         ys_driven.append(ys_driven[0])
         xs_driven = [x+c_dist for x in xs_driven]
-        x_cable = math.cos(rot+driven_angs[i])+c_dist
-        y_cable = math.sin(rot+driven_angs[i])
+        x_cable = math.cos(rot-driven_angs[i])+c_dist
+        y_cable = math.sin(rot-driven_angs[i])
 
         plt.plot(xs_drive,ys_drive,'b')
         plt.hold(True)
@@ -151,11 +152,7 @@ def plot_gear(drive_gear, driven_gear, rads, rot, label, l):
     outimg = os.path.join(outimg,'OUT_{}.gif'.format(label))
     make_gif(imgs,outimg,3.0)
 
-def plot_stretching(out_angs, in_angs, stretching):
-    pass
-
-
-def plot_manufacturability(drive_gear, driven_gear, fail_ids, out_motion, c_dist = 2.0, name = ''):
+def plot_manufacturability(drive_gear, driven_gear, fail_ids, out_motion, c_dist = 2.0, name = '', fout = None):
     drive_angs = [d[0] for d in drive_gear]
     drive_rads = [d[1] for d in drive_gear]
     driven_angs = [d[0]+math.pi for d in driven_gear]
@@ -174,6 +171,7 @@ def plot_manufacturability(drive_gear, driven_gear, fail_ids, out_motion, c_dist
     driven_xs_fail = [d+c_dist for d in driven_xs_fail]
     plt.subplot(1,2,1)
     plt.title(name)
+    plt.hold(False)
     plt.plot(drive_xs,drive_ys,'b')
     plt.hold(True)
     plt.plot(driven_xs,driven_ys,'b')
@@ -184,7 +182,9 @@ def plot_manufacturability(drive_gear, driven_gear, fail_ids, out_motion, c_dist
     plt.subplot(1,2,2)
     xs = [o[0] for o in out_motion]
     ys = [o[1] for o in out_motion]
+    plt.hold(False)
     plt.plot(xs,ys,'b')
+    plt.hold(True)
     xs_fails = [d for i, d in enumerate(xs) if i in fail_ids]
     ys_fails = [d for i, d in enumerate(ys) if i in fail_ids]
     plt.plot(xs_fails, ys_fails, 'r.')
@@ -204,7 +204,10 @@ def plot_manufacturability(drive_gear, driven_gear, fail_ids, out_motion, c_dist
     # for i in xrange(len(driven_angs)):
     #     if i in fail_ids:
     #         plt.plot(driven_angs[i],d_angs[i],'ro')
-    plt.show()
+    if fout == None:
+        plt.show()
+    else:
+        plt.savefig(fout, bbox_inches='tight')
 
 def make_gif(images, outimg, length):
     delay = length*100/float(len(images))

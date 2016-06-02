@@ -137,14 +137,15 @@ def find_scale(drive_gear, R):
     d_angs.append(2*math.pi-angs[-1])
     #print d_angs
     assert(len(d_angs)==len(angs))
-    def score_func(s):
-        score = 0
+    def score_func(x):
+        s = x[0]
+        score = 0.0
         for i in xrange(len(d_angs)):
             score += (d_angs[i]*rads[i]*s)/(2*R-rads[i]*s)
-        return score-2*math.pi
+        return (score-2*math.pi)**2
     #print score_func(0),score_func(1)
-    scale = scipy.optimize.brentq(score_func, 0, 1)
-    return scale
+    res = scipy.optimize.minimize(score_func, [1.0])
+    return res.x
 
 def gen_gear(angs,R=1.0,l=1.5):
     #given the gear radius and output length, calculate the non-normalized change of length as a function of rotation
@@ -240,3 +241,7 @@ def find_index_down(val, vals, start=0):
             #linearly interpolate between the two points
             return (i, (val-vals[i])/(vals[i+1]-vals[i]))
     #print val, 'down'
+
+def check_interference(gear_1, gear_2, pose, tooth_rad):
+    '''checks if, between gear_1 and gear_2, in pose, there are any interferening points'''
+    pass
