@@ -5,23 +5,43 @@ from svgwrite import cm, mm
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
-import copy
+import copy, os, tqdm
 
-def write_gear(fname, gear, hole_rad, base_rad_cm=2, cable_pt = None):
+def write_layers(folder_name, gear, cable_pt = None):
+    shiftx, shifty = find_shift(gear)
+    keys = gear.keys()
+    for k in tqdm.tqdm(keys):
+        fname = os.path.join(folder_name, 'layer_{}.svg'.format(k))
+        write_gear(fname, gear[k], 0.1, shiftx, shifty, 1, None)
+
+def find_shift(gear):
+    shiftx = 0
+    shifty = 0
+    for k in gear.keys():
+        angs = [d[0] for d in gear[k]]
+        rads = [d[1] for d in gear[k]]
+        xs, ys = plotting.pol2cart(angs, [r for r in rads])
+        shiftx = min(shiftx, min(xs))
+        shifty = min(shifty, min(ys))
+    return -shiftx, -shifty
+
+def write_gear(fname, gear, hole_rad, shiftx, shifty, base_rad_cm=1, cable_pt = None):
     dwg = svgwrite.Drawing(fname, profile='full')
 
     angs = [d[0] for d in gear]
     rads = [d[1] for d in gear]
     xs, ys = plotting.pol2cart(angs, [r*base_rad_cm for r in rads])
-    shiftx = -min(xs)
-    shifty = -min(ys)
+    #shiftx = -min(xs)
+    #shifty = -min(ys)
     xs = [(x+shiftx)*cm for x in xs]
     ys = [(y+shifty)*cm for y in ys]
     pts = zip(xs,ys)
     for i in xrange(len(pts)-1):
-        dwg.add(dwg.line(pts[i],pts[i+1]))
-    dwg.add(dwg.line(pts[-1],pts[0]))
-    dwg.add(dwg.circle(center=(shiftx*cm,shifty*cm),r=hole_rad*cm))
+        dwg.add(dwg.line(pts[i],pts[i+1],stroke=svgwrite.rgb(100, 0, 0, '%')))
+    dwg.add(dwg.line(pts[-1],pts[0],stroke=svgwrite.rgb(100, 0, 0, '%')))
+    dwg.add(dwg.circle(center=(shiftx*cm,shifty*cm),r=hole_rad*cm,stroke=svgwrite.rgb(100, 0, 0, '%')))
+    if cable_pt != None:
+        dwg.add(dwg.circle(center=((shiftx+cable_pt[0])*cm,(shifty+cable_pt[1])*cm),r=hole_rad*cm,stroke=svgwrite.rgb(100, 0, 0, '%')))
     dwg.save()
 
 def check_interior_angle(gear, threshold = (30/180)*math.pi):
@@ -245,3 +265,38 @@ def find_index_down(val, vals, start=0):
 def check_interference(gear_1, gear_2, pose, tooth_rad):
     '''checks if, between gear_1 and gear_2, in pose, there are any interferening points'''
     pass
+
+def splitter(gear, inds):
+    '''splits the gear into distinct layers at the indicated indicies'''
+    pass
+
+def uniform_splitter(gear, n_layers, is_driven):
+    '''splits the gear into distinct layers by alternating teeth'''
+    if is_driven:
+        m=-1
+    else:
+        m=1
+    tooth_list_length = 3
+    n_teeth = int(len(gear)/tooth_list_length)
+    for i in xrange(0, n_teeth):
+        for j in xrange(0, tooth_list_length):
+            pass
+    layers = {}
+    for l in xrange(n_layers):
+        layers[l]=[]
+    l = 0
+    for t in xrange(n_teeth):
+        for p in xrange(tooth_list_length):
+            #add an escape
+            if p==0:
+                new_rad = gear[t*tooth_list_length+p][1]
+                new_ang = gear[t*tooth_list_length+p][0]-m*math.pi*2/180.0
+                layers[l].append((new_ang, new_rad))
+            layers[l].append(gear[t*tooth_list_length+p])
+            if p==tooth_list_length-1:
+                new_rad = gear[t*tooth_list_length+p][1]
+                new_ang = gear[t*tooth_list_length+p][0]+m*math.pi*2/180.0
+                layers[l].append((new_ang, new_rad))
+        l += 1
+        l = l%n_layers
+    return layers

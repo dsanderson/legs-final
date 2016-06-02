@@ -1,5 +1,5 @@
 import ios, motion, plotting, os, gears, tooth
-import tqdm, os
+import tqdm, os, math
 
 if __name__ == '__main__':
     leg = ios.leg()
@@ -59,4 +59,21 @@ if __name__ == '__main__':
 
     #plotting.plot_manufacturability(l_driven_rads,inds_drive+inds_driven)
     #gears.relax_motion(out_motion, 1.0, 1.5, inds_drive+inds_driven)
-    tooth.test_tootherpolate(l_drive_rads, l_driven_rads,100)
+    #tooth.test_tootherpolate(l_drive_rads, l_driven_rads,100)
+    #tooth.test_calc_gear_length(l_drive_rads,l_driven_rads)
+    #tooth.test_interpolate_tooth_angles(l_drive_rads, l_driven_rads,50)
+    n_teeth = 50
+    tooth_height, tooth_width = tooth.design_teeth(l_drive_rads, n_teeth)
+    l_drive, l_driven = tooth.gen_teeth(l_drive_rads, l_driven_rads, tooth_height, tooth_width, n_teeth)
+    #plotting.plot_gear(l_drive, l_driven, l_rads, l_rot, 'lower_joint', 1.5)
+    thresh = math.pi*30/180.0
+    #l_inds_drive = gears.check_interior_angle(l_drive, thresh)
+    #l_inds_driven = gears.check_interior_angle(l_driven, thresh)
+    #plotting.plot_manufacturability(l_drive,l_driven,l_inds_drive+l_inds_driven,l_out_motion, 2.0,'lower',None)
+    n_layers = 6
+    l_drive_split = gears.uniform_splitter(l_drive, n_layers,False)
+    l_driven_split = gears.uniform_splitter(l_driven, n_layers,True)
+    fpath = os.path.join(os.getcwd(),'imgs','compiled','leg_full','lower','drive')
+    gears.write_layers(fpath,l_drive_split)
+    fpath = os.path.join(os.getcwd(),'imgs','compiled','leg_full','lower','driven')
+    gears.write_layers(fpath,l_driven_split)
