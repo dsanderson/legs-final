@@ -1,18 +1,21 @@
 from __future__ import division
 import math
 import svgwrite, plotting
-from svgwrite import cm, mm
+#from svgwrite import cm, mm
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 import copy, os, tqdm
 
-def write_layers(folder_name, gear, cable_pt = None):
+def write_layers(folder_name, gear, cable_pt = None, is_driven=False):
     shiftx, shifty = find_shift(gear)
     keys = gear.keys()
     for k in tqdm.tqdm(keys):
         fname = os.path.join(folder_name, 'layer_{}.svg'.format(k))
-        write_gear(fname, gear[k], 0.1, shiftx, shifty, 1, None)
+        if k==0:
+            write_gear(fname, gear[k], 0.1, shiftx, shifty, 1, cable_pt, is_driven)
+        else:
+            write_gear(fname, gear[k], 0.1, shiftx, shifty, 1, None, is_driven)
 
 def find_shift(gear):
     shiftx = 0
@@ -25,10 +28,13 @@ def find_shift(gear):
         shifty = min(shifty, min(ys))
     return -shiftx, -shifty
 
-def write_gear(fname, gear, hole_rad, shiftx, shifty, base_rad_cm=1, cable_pt = None):
+def write_gear(fname, gear, hole_rad, shiftx, shifty, base_rad_cm=1, cable_pt = None, is_driven=False):
     dwg = svgwrite.Drawing(fname, profile='full')
-
-    angs = [d[0] for d in gear]
+    cm = 100.0
+    if is_driven:
+        angs = [d[0] for d in gear]
+    else:
+        angs = [d[0] for d in gear]
     rads = [d[1] for d in gear]
     xs, ys = plotting.pol2cart(angs, [r*base_rad_cm for r in rads])
     #shiftx = -min(xs)
@@ -40,6 +46,8 @@ def write_gear(fname, gear, hole_rad, shiftx, shifty, base_rad_cm=1, cable_pt = 
         dwg.add(dwg.line(pts[i],pts[i+1],stroke=svgwrite.rgb(100, 0, 0, '%')))
     dwg.add(dwg.line(pts[-1],pts[0],stroke=svgwrite.rgb(100, 0, 0, '%')))
     dwg.add(dwg.circle(center=(shiftx*cm,shifty*cm),r=hole_rad*cm,stroke=svgwrite.rgb(100, 0, 0, '%')))
+    #add verical line through circle
+    dwg.add(dwg.line((shiftx*cm,(shifty+hole_rad)*cm),(shiftx*cm,(shifty-hole_rad)*cm),stroke=svgwrite.rgb(100, 0, 0, '%')))
     if cable_pt != None:
         dwg.add(dwg.circle(center=((shiftx+cable_pt[0])*cm,(shifty+cable_pt[1])*cm),r=hole_rad*cm,stroke=svgwrite.rgb(100, 0, 0, '%')))
     dwg.save()
@@ -270,12 +278,8 @@ def splitter(gear, inds):
     '''splits the gear into distinct layers at the indicated indicies'''
     pass
 
-def uniform_splitter(gear, n_layers, is_driven):
+def uniform_splitter(gear, n_layers, is_driven, tooth_gap):
     '''splits the gear into distinct layers by alternating teeth'''
-    if is_driven:
-        m=-1
-    else:
-        m=1
     tooth_list_length = 3
     n_teeth = int(len(gear)/tooth_list_length)
     for i in xrange(0, n_teeth):
@@ -286,17 +290,40 @@ def uniform_splitter(gear, n_layers, is_driven):
         layers[l]=[]
     l = 0
     for t in xrange(n_teeth):
+        if is_driven:
+            extras = []
+            norm = []
+        else:
+            extras = None
         for p in xrange(tooth_list_length):
             #add an escape
-            if p==0:
-                new_rad = gear[t*tooth_list_length+p][1]
-                new_ang = gear[t*tooth_list_length+p][0]-m*math.pi*2/180.0
-                layers[l].append((new_ang, new_rad))
-            layers[l].append(gear[t*tooth_list_length+p])
-            if p==tooth_list_length-1:
-                new_rad = gear[t*tooth_list_length+p][1]
-                new_ang = gear[t*tooth_list_length+p][0]+m*math.pi*2/180.0
-                layers[l].append((new_ang, new_rad))
+            if is_driven:
+                norm.append(gear[t*tooth_list_length+p])
+                #layers[l].append(gear[t*tooth_list_length+p])
+                dang = tooth_gap/gear[t*tooth_list_length][1]
+                extras.append((gear[t*tooth_list_length+p][0]+dang, gear[t*tooth_list_length+p][1]))
+            else:
+                if p==0:
+                    new_rad = gear[t*tooth_list_length+p][1]
+                    new_ang = gear[t*tooth_list_length+p][0]-math.pi*2/180.0
+                    layers[l].append((new_ang, new_rad))
+                layers[l].append(gear[t*tooth_list_length+p])
+                if p==tooth_list_length-1:
+                    new_rad = gear[t*tooth_list_length+p][1]
+                    new_ang = gear[t*tooth_list_length+p][0]+math.pi*2/180.0
+                    layers[l].append((new_ang, new_rad))
+        if is_driven:
+            for e in extras:
+                layers[l].append(e)
+            for n in norm:
+                layers[l].append(n)
         l += 1
         l = l%n_layers
     return layers
+
+def rotate_split(gear, ang):
+    for k in gear.keys():
+        angs = [g[0]+ang for g in gear[k]]
+        rads = [g[1] for g in gear[k]]
+        gear[k] = zip(angs,rads)
+    return gear
